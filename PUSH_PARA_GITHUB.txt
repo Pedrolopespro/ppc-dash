@@ -1,0 +1,23 @@
+INSTRUÇÕES: Cole esses comandos no Terminal do Mac para enviar o projeto ao GitHub.
+
+cd ~/Documents/AUDE/CRM/AUDE/ppc-dash
+
+# Limpar lock file travado (se houver)
+rm -f .git/index.lock
+
+# Configurar identidade git (uma vez só)
+git config user.email "lopeshpl@gmail.com"
+git config user.name "Pedro Lopes"
+
+# Commit e push
+git add -A
+git commit -m "feat: PPC DASH v1 — React + Vite + Tailwind dashboard conectado ao N8N"
+git push origin main
+
+# URL do dashboard no GitHub:
+# https://github.com/Pedrolopespro/ppc-dash
+
+
+DEPOIS DO PUSH — deploy na VPS:
+ssh root@177.7.45.167
+bash <(curl -s https://raw.githubusercontent.com/Pedrolopespro/ppc-dash/main/deploy.sh)
