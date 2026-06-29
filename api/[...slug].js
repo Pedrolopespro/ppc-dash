@@ -1,23 +1,29 @@
-// Vercel Serverless Proxy → N8N
-// API key lida do env var (seguro) ou do header do browser (fallback)
+// Catch-all proxy para N8N — funciona na raiz do api/
+// Rota: /api/n8n-proxy/* → N8N
 const N8N_URL = process.env.N8N_URL || 'https://n8n-uzcu.srv1627758.hstgr.cloud'
 
 export default async function handler(req, res) {
-  const { path } = req.query
-  const targetPath = Array.isArray(path) ? path.join('/') : (path || '')
+  const { slug } = req.query
+  const parts = Array.isArray(slug) ? slug : [slug || '']
 
-  // Preservar query string
+  // Só processa rotas que começam com 'n8n-proxy'
+  if (parts[0] !== 'n8n-proxy') {
+    res.status(404).json({ error: 'Not found' })
+    return
+  }
+
+  // Remover o prefixo 'n8n-proxy' e montar o path do N8N
+  const n8nPath = parts.slice(1).join('/')
   const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
-  const target = `${N8N_URL}/${targetPath}${qs}`
+  const target = `${N8N_URL}/${n8nPath}${qs}`
 
-  // API key: env var tem prioridade, browser header como fallback
   const apiKey = process.env.N8N_API_KEY || req.headers['x-n8n-api-key'] || ''
 
   console.log(`[proxy] ${req.method} ${target}`)
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000) // 8s timeout
+    const timeout = setTimeout(() => controller.abort(), 8000)
 
     const upstream = await fetch(target, {
       method: req.method,
@@ -33,9 +39,9 @@ export default async function handler(req, res) {
     })
 
     clearTimeout(timeout)
+    console.log(`[proxy] response: ${upstream.status}`)
 
     const text = await upstream.text()
-    console.log(`[proxy] response: ${upstream.status}`)
     res.status(upstream.status)
     try { res.json(JSON.parse(text)) } catch { res.send(text) }
 

@@ -1,6 +1,7 @@
 // Em dev: proxy via Vite (vite.config.js)
 // Em produção (Vercel): proxy via serverless function /api/n8n/[...path].js
 // → sem CORS, sem expor URL do N8N no frontend
+// /n8n-api/* → rewrite Vercel → /api/n8n-proxy/* → função catch-all → N8N
 const BASE = '/n8n-api/api/v1'
 const HEALTH = '/n8n-api/healthz'
 

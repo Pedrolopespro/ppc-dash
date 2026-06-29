@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/n8n-api/:path*", "destination": "/api/n8n/:path*" }
+    { "source": "/n8n-api/:path*", "destination": "/api/n8n-proxy/:path*" }
   ],
   "env": {
     "N8N_URL": "https://n8n-uzcu.srv1627758.hstgr.cloud"
