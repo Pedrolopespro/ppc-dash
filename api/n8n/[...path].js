@@ -1,22 +1,24 @@
-// Vercel Serverless Proxy — elimina CORS entre o browser e o N8N
-// Browser chama /n8n-api/... → esta função → N8N (server-side, sem CORS)
-
+// Vercel Serverless Proxy → N8N
+// API key lida do env var (seguro) ou do header do browser (fallback)
 const N8N_URL = process.env.N8N_URL || 'https://n8n-uzcu.srv1627758.hstgr.cloud'
 
 export default async function handler(req, res) {
-  // Monta o path alvo
   const { path } = req.query
   const targetPath = Array.isArray(path) ? path.join('/') : (path || '')
 
-  // Preservar query string original
-  const fullUrl = new URL(req.url, 'http://localhost')
-  const search = fullUrl.search || ''
-  const target = `${N8N_URL}/${targetPath}${search}`
+  // Preservar query string
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
+  const target = `${N8N_URL}/${targetPath}${qs}`
 
-  // Encaminhar API key do browser para o N8N
-  const apiKey = req.headers['x-n8n-api-key'] || ''
+  // API key: env var tem prioridade, browser header como fallback
+  const apiKey = process.env.N8N_API_KEY || req.headers['x-n8n-api-key'] || ''
+
+  console.log(`[proxy] ${req.method} ${target}`)
 
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000) // 8s timeout
+
     const upstream = await fetch(target, {
       method: req.method,
       headers: {
@@ -27,16 +29,18 @@ export default async function handler(req, res) {
       body: ['POST', 'PUT', 'PATCH'].includes(req.method)
         ? JSON.stringify(req.body)
         : undefined,
+      signal: controller.signal,
     })
 
+    clearTimeout(timeout)
+
     const text = await upstream.text()
+    console.log(`[proxy] response: ${upstream.status}`)
     res.status(upstream.status)
-    try {
-      res.json(JSON.parse(text))
-    } catch {
-      res.send(text)
-    }
+    try { res.json(JSON.parse(text)) } catch { res.send(text) }
+
   } catch (err) {
-    res.status(502).json({ error: 'Proxy error: ' + err.message })
+    console.error(`[proxy] error: ${err.message}`)
+    res.status(502).json({ error: 'Proxy error', detail: err.message, target })
   }
 }
