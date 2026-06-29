@@ -1,23 +1,54 @@
-INSTRUÇÕES: Cole esses comandos no Terminal do Mac para enviar o projeto ao GitHub.
+===================================================
+PASSO 1 — Push para o GitHub (Terminal do Mac)
+===================================================
 
 cd ~/Documents/AUDE/CRM/AUDE/ppc-dash
-
-# Limpar lock file travado (se houver)
 rm -f .git/index.lock
-
-# Configurar identidade git (uma vez só)
-git config user.email "lopeshpl@gmail.com"
-git config user.name "Pedro Lopes"
-
-# Commit e push
 git add -A
-git commit -m "feat: PPC DASH v1 — React + Vite + Tailwind dashboard conectado ao N8N"
+git commit -m "feat: GitHub Pages deploy + CORS fix"
 git push origin main
 
-# URL do dashboard no GitHub:
-# https://github.com/Pedrolopespro/ppc-dash
+
+===================================================
+PASSO 2 — Ativar GitHub Pages no repositório
+===================================================
+
+1. Acesse: https://github.com/Pedrolopespro/ppc-dash/settings/pages
+2. Em "Source", selecione: GitHub Actions
+3. Salve.
+
+O deploy acontece automaticamente a cada push na branch main.
+URL do dashboard: https://pedrolopespro.github.io/ppc-dash/
 
 
-DEPOIS DO PUSH — deploy na VPS:
+===================================================
+PASSO 3 — Liberar CORS no N8N (VPS)
+===================================================
+
 ssh root@177.7.45.167
-bash <(curl -s https://raw.githubusercontent.com/Pedrolopespro/ppc-dash/main/deploy.sh)
+
+# Adicionar variável de CORS ao docker-compose do N8N:
+sed -i '/N8N_CORS_ALLOW_ORIGIN/d' /docker/n8n-uzcu/docker-compose.yml
+
+# Inserir após a linha "environment:"
+# (edite manualmente ou use o comando abaixo)
+cd /docker/n8n-uzcu
+
+# Adicionar CORS ao .env ou ao docker-compose
+echo "N8N_CORS_ALLOW_ORIGIN=https://pedrolopespro.github.io" >> .env
+
+# Reiniciar N8N
+docker compose down && docker compose up -d
+
+# Verificar que subiu:
+docker compose logs -f --tail=20
+
+
+===================================================
+PASSO 4 — Configurar a chave API no dashboard
+===================================================
+
+1. Acesse: https://pedrolopespro.github.io/ppc-dash/
+2. Vá em Configurações
+3. Cole a chave da AUDE-OS (N8N → Settings → n8n API)
+4. Clique "Salvar" → "Testar conexão"

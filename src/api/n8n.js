@@ -1,5 +1,8 @@
-// Proxy via Nginx (produção) ou Vite dev server (desenvolvimento)
+// Em dev: proxy via Vite (vite.config.js)
+// Em produção (Vercel): proxy via serverless function /api/n8n/[...path].js
+// → sem CORS, sem expor URL do N8N no frontend
 const BASE = '/n8n-api/api/v1'
+const HEALTH = '/n8n-api/healthz'
 
 const getKey = () => localStorage.getItem('n8n_api_key') || ''
 
@@ -14,7 +17,6 @@ const handle = async (res) => {
 }
 
 export const n8n = {
-  // Workflows
   listWorkflows: () =>
     fetch(`${BASE}/workflows?limit=100`, { headers: h() }).then(handle),
 
@@ -27,7 +29,6 @@ export const n8n = {
   deactivateWorkflow: (id) =>
     fetch(`${BASE}/workflows/${id}/deactivate`, { method: 'POST', headers: h() }).then(handle),
 
-  // Execuções
   listExecutions: (workflowId, limit = 20) => {
     const wf = workflowId ? `&workflowId=${workflowId}` : ''
     return fetch(`${BASE}/executions?limit=${limit}${wf}`, { headers: h() }).then(handle)
@@ -36,7 +37,6 @@ export const n8n = {
   getExecution: (id) =>
     fetch(`${BASE}/executions/${id}`, { headers: h() }).then(handle),
 
-  // Health
   ping: () =>
-    fetch('/n8n-api/healthz').then((r) => r.ok),
+    fetch(HEALTH).then((r) => r.ok).catch(() => false),
 }
